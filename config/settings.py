@@ -52,10 +52,14 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
 ]
 
+STATIC_URL = 'static/'
+
+# Define where Django should collect static files for production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be placed immediately after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -66,6 +70,9 @@ MIDDLEWARE = [
     # Add this line for django-allauth
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+# Enable WhiteNoise's compression and caching storage engine
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ROOT_URLCONF = 'config.urls'
 
@@ -157,3 +164,4 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 # Skip the "Are you sure you want to sign out?" confirmation page
 # It will log the user out immediately when they click the logout link
 ACCOUNT_LOGOUT_ON_GET = True
+
