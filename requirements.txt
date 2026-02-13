@@ -8,7 +8,7 @@ Django==5.2.11
 django-allauth==65.14.1
 gunicorn==25.1.0
 idna==3.11
-packaging @ file:///opt/miniconda3/conda-bld/packaging_1761049079023/work
+packaging==25.0
 pycparser==3.0
 PyJWT==2.11.0
 requests==2.32.5
