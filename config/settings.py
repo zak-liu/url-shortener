@@ -153,7 +153,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Required for django-allauth to identify the current site
-SITE_ID = 1
+SITE_ID = 2
 
 # config/settings.py
 # Redirect to home page after successful login
