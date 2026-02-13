@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Link Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>URL Performance Analytics</h2>
+            <a href="{% url 'create_url' %}" class="btn btn-primary">Create New URL</a>
+        </div>
+
+        {% for url in urls %}
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between">
+                <span>Short Code: <strong>{{ url.short_code }}</strong></span>
+                <span>Total Clicks: <span class="badge bg-info">{{ url.clickdetail_set.count }}</span></span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Target URL: <a href="{{ url.original_url }}" target="_blank">{{ url.original_url }}</a></p>
+                
+                <table class="table table-hover table-sm mt-3">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Clicked At (UTC)</th>
+                            <th>Visitor IP Address</th>
+                            <th>User Agent (Browser Info)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for click in url.clickdetail_set.all|dictsortreversed:"clicked_at" %}
+                        <tr>
+                            <td>{{ click.clicked_at|date:"Y-m-d H:i:s" }}</td>
+                            <td><code>{{ click.ip_address }}</code></td>
+                            <td class="small text-truncate" style="max-width: 300px;">{{ click.user_agent }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No click data recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

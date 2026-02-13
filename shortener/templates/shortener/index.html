@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow border-0">
+                    <div class="card-body p-5">
+                        <h2 class="card-title text-center mb-4">URL Shortener</h2>
+                        
+                        {% if user.is_authenticated %}
+                            <form method="POST">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="original_url" class="form-label text-muted">Enter Long URL:</label>
+                                    <input type="url" name="original_url" class="form-control form-control-lg" id="original_url" placeholder="https://example.com/very-long-link" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 btn-lg">Shorten URL</button>
+                            </form>
+
+                            {% if short_url %}
+                                <div class="alert alert-success mt-4">
+                                    <p class="mb-2"><strong>Success! Your link is ready:</strong></p>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" value="{{ short_url }}" id="shortUrlText" readonly>
+                                        <a href="{{ short_url }}" target="_blank" class="btn btn-outline-success">Open</a>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <hr class="my-4">
+
+                            <div class="text-center">
+                                <p class="text-success small mb-2">Logged in as: <strong>{{ user.username }}</strong></p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{% url 'url_stats' %}" class="btn btn-sm btn-outline-info">View Analytics</a>
+                                    <a href="{% url 'account_logout' %}" class="btn btn-sm btn-outline-secondary">Logout</a>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-danger mb-4">Please login to start shortening URLs.</p>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'google_login' %}" class="btn btn-outline-dark">Login with Google</a>
+                                    <a href="{% url 'facebook_login' %}" class="btn btn-outline-primary">Login with Facebook</a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <p class="text-center mt-3 text-muted small">© 2026 URL Shortener Assignment</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
