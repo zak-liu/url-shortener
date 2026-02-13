@@ -27,10 +27,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-dev-key')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # allow hosts
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+# In a strict production environment, you would list specific domains here.
+ALLOWED_HOSTS = ['*']
 
-# Application definition
-# config/settings.py
+# This tells Django to trust requests coming from your https URL.
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+
+# Without this, Django doesn't know it's on HTTPS and may cause redirect loops or empty responses.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
