@@ -1,27 +1,27 @@
 # django imports for views and authentication
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views import View  # Base class for Web Views
-from django.contrib.auth.mixins import LoginRequiredMixin # Mixin for class-based auth
+from django.views import View  
+from django.contrib.auth.mixins import LoginRequiredMixin 
 
-# Import models and utilities
+# Import models
 from .models import ShortenedURL, ClickDetail
-from .utils import generate_short_code
 
-# Create your views here.
+# REST Framework imports
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiExample
 
+# Import Serializer
 from .serializers import ShortenedURLSerializer
 
-# --- API Endpoints (For Mobile/Third-party Integration) ---
+# --- REST API Endpoints (For Mobile/Third-party/Swagger) ---
+
 class ShortLinkCreateAPI(APIView):
     """
     API endpoint to create a shortened URL. 
-    Enforces authentication to ensure link ownership.
+    Uses Serializer to handle short_code generation logic centrally.
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ShortenedURLSerializer
@@ -40,9 +40,8 @@ class ShortLinkCreateAPI(APIView):
     def post(self, request):
         serializer = ShortenedURLSerializer(data=request.data)
         if serializer.is_valid():
-            short_code = generate_short_code()
-            # Explicitly associate the link with the logged-in user
-            serializer.save(user=request.user, short_code=short_code)
+            # Logic encapsulated in Serializer.create()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -54,46 +53,48 @@ class ShortLinkListAPI(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        links = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
+        # Uses centralized manager method 'for_user'
+        links = ShortenedURL.objects.for_user(request.user)
         serializer = ShortenedURLSerializer(links, many=True)
         return Response(serializer.data)
 
 
-# --- Web Interface Views (For Browser Access) ---
+# --- Web Interface Views (Browser Based) ---
+
 class CreateURLView(LoginRequiredMixin, View):
     """
-    Web view for the homepage to create short links via a browser form.
+    Web view for the homepage. Reuses Serializer to keep code DRY.
     """
     def get(self, request):
         return render(request, "shortener/index.html")
 
     def post(self, request):
-        original_url = request.POST.get("original_url", "").strip()
-        short_code = generate_short_code()
+        # Reuse Serializer for web form to ensure consistent logic
+        data = {"original_url": request.POST.get("original_url", "").strip()}
+        serializer = ShortenedURLSerializer(data=data)
         
-        ShortenedURL.objects.create(
-            original_url=original_url,
-            short_code=short_code,
-            user=request.user
-        )
+        if serializer.is_valid():
+            # Consistent with API behavior
+            instance = serializer.save(user=request.user)
+            short_url = request.build_absolute_uri(f'/{instance.short_code}')
+            return render(request, "shortener/index.html", {"short_url": short_url})
         
-        short_url = request.build_absolute_uri(f'/{short_code}')
-        return render(request, "shortener/index.html", {"short_url": short_url})
+        return render(request, "shortener/index.html", {"error": "Invalid URL provided."})
 
 
 class URLRedirectView(LoginRequiredMixin, View):
     """
     Handles redirection and visitor tracking. 
-    Requires login to prevent unauthorized use of the link.
+    Captures real IP address even behind proxies (e.g. Render).
     """
     def get(self, request, short_code):
         url_record = get_object_or_404(ShortenedURL, short_code=short_code)
         
-        # Capture visitor IP through proxy for Render deployment
+        # Capture IP considering proxy headers
         x_fwd = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_fwd.split(',')[0].strip() if x_fwd else request.META.get('REMOTE_ADDR')
             
-        # Log analytics metadata
+        # Log analytics
         ClickDetail.objects.create(
             url_record=url_record,
             ip_address=ip,
@@ -107,5 +108,6 @@ class URLStatsView(LoginRequiredMixin, View):
     Displays the analytics dashboard for the logged-in user.
     """
     def get(self, request):
-        user_urls = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
+        # Uses the same manager method as API for consistency
+        user_urls = ShortenedURL.objects.for_user(request.user)
         return render(request, 'shortener/stats.html', {'urls': user_urls})
