@@ -1,4 +1,5 @@
 # django imports for URL routing
+from django.conf import settings
 from django.urls import path, include
 from django.contrib import admin
 from django.urls import path
@@ -10,7 +11,6 @@ from . import views
 
 urlpatterns = [
     # Core Django and Authentication Routes
-    path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     
     # Browser Routes (Web CBVs)
@@ -26,3 +26,8 @@ urlpatterns = [
     path('api/schema/', login_required(SpectacularAPIView.as_view()), name='schema'),
     path('api/docs/', login_required(SpectacularSwaggerView.as_view(url_name='schema')), name='swagger-ui'),
 ]
+
+if settings.DEBUG:
+    urlpatterns = [
+        path('admin/', admin.site.urls),
+    ] + urlpatterns
