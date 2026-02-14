@@ -4,47 +4,70 @@
     <meta charset="UTF-8">
     <title>Link Analytics Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .short-link:hover { text-decoration: underline !important; }
+    </style>
 </head>
 <body class="bg-light">
-    <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>URL Performance Analytics</h2>
-            <a href="{% url 'create_url' %}" class="btn btn-primary">Create New URL</a>
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand">URL Analytics</span>
+            <a href="{% url 'create_url' %}" class="btn btn-outline-light btn-sm">← Back to Home</a>
         </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4 text-center">Your Link Performance</h2>
 
         {% for url in urls %}
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-dark text-white d-flex justify-content-between">
-                <span>Short Code: <strong>{{ url.short_code }}</strong></span>
-                <span>Total Clicks: <span class="badge bg-info">{{ url.clickdetail_set.count }}</span></span>
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h5 class="mb-0 text-primary">Code: <strong>{{ url.short_code }}</strong></h5>
+                        
+                        <div class="mt-1">
+                            <small class="text-muted">Short Link: </small>
+                            <a href="/{{ url.short_code }}" target="_blank" class="short-link text-success text-decoration-none fw-bold small">
+                                {{ request.scheme }}://{{ request.get_host }}/{{ url.short_code }}
+                            </a>
+                        </div>
+
+                        <small class="text-muted">Target Link: </small>
+                        <a href="{{ url.original_url }}" target="_blank" class="text-decoration-none small text-truncate d-inline-block" style="max-width: 250px; vertical-align: bottom;">
+                            {{ url.original_url }}
+                        </a>
+                    </div>
+                    
+                    <span class="badge bg-primary rounded-pill">Total Clicks: {{ url.clicks.count }}</span>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Time (UTC)</th>
+                                    <th>Visitor IP Address</th>
+                                    <th>Device / Browser</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for click in url.clicks.all %}
+                                    <tr>
+                                        <td class="ps-3">{{ click.clicked_at|date:"Y-m-d H:i:s" }}</td>
+                                        <td><span class="badge bg-secondary font-monospace">{{ click.ip_address }}</span></td>
+                                        <td class="small text-muted">{{ click.user_agent|truncatechars:45 }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-center py-3 text-muted">No click data yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="text-muted">Target URL: <a href="{{ url.original_url }}" target="_blank">{{ url.original_url }}</a></p>
-                
-                <table class="table table-hover table-sm mt-3">
-                    <thead class="table-secondary">
-                        <tr>
-                            <th>Clicked At (UTC)</th>
-                            <th>Visitor IP Address</th>
-                            <th>User Agent (Browser Info)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for click in url.clickdetail_set.all|dictsortreversed:"clicked_at" %}
-                        <tr>
-                            <td>{{ click.clicked_at|date:"Y-m-d H:i:s" }}</td>
-                            <td><code>{{ click.ip_address }}</code></td>
-                            <td class="small text-truncate" style="max-width: 300px;">{{ click.user_agent }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center text-muted">No click data recorded yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        {% empty %}
+            <div class="alert alert-info text-center py-5">No shortened links found.</div>
         {% endfor %}
     </div>
 </body>

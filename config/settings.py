@@ -170,3 +170,43 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 # It will log the user out immediately when they click the logout link
 ACCOUNT_LOGOUT_ON_GET = True
 
+# Use email as the primary identifier
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+
+# Ensure we get the user's first and last name from social providers
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# Provider specific settings
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        # Request access to the user's profile and email
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        # Request specific fields including first and last name
+        'SCOPE': ['email', 'public_profile'],
+        'FIELDS': [
+            'id',
+            'email',
+            'name',        # Full name
+            'first_name',  # First name
+            'last_name',   # Last name
+        ],
+        'VERSION': 'v17.0',
+    }
+}
+
+## Import local settings if they exist (for development overrides)
+try:
+    from .local import *
+except ImportError:
+    pass
