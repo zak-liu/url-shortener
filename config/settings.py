@@ -104,8 +104,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # --- django-allauth Core Configurations ---
 
-# Set to 2 based on the Admin Site record ID for url-shortener-0s7j.onrender.com
-SITE_ID = 2 
+# Set to 1 based on the Admin Site record ID for url-shortener-0s7j.onrender.com
+SITE_ID = 1
 
 # Post-login and post-logout redirection paths
 LOGIN_REDIRECT_URL = '/'
