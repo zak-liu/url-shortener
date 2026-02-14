@@ -5,7 +5,7 @@ A professional, high-performance URL shortening service built with **Django 5.x*
 ## 🚀 Live Demo
 **URL:** [https://url-shortener-0s7j.onrender.com/](https://url-shortener-0s7j.onrender.com/)
 
-## ✨ Key Features (v1.1.0 Upgrade)
+## ✨ Key Features (v1.1.0)
 * **RESTful API Engine**: Fully integrated API endpoints for link management via **Django REST Framework**.
 * **Interactive API Documentation**: Embedded **Swagger UI** (OpenAPI 3.0) for live testing and programmatic exploration.
 * **Class-Based Architecture (CBV)**: Migrated the entire codebase from FBVs to **Class-Based Views**, ensuring superior maintainability and adherence to Django best practices.
