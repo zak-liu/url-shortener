@@ -1,73 +1,112 @@
+# django imports for views and authentication
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views import View  # Base class for Web Views
+from django.contrib.auth.mixins import LoginRequiredMixin # Mixin for class-based auth
+
+# Import models and utilities
 from .models import ShortenedURL, ClickDetail
 from .utils import generate_short_code
 
-def create_url(request):
+# Create your views here.
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiExample
+
+from .serializers import ShortenedURLSerializer
+
+# --- API Endpoints (For Mobile/Third-party Integration) ---
+class ShortLinkCreateAPI(APIView):
     """
-    Handle short URL creation. Includes a fix to strip whitespace from input URLs
-    to prevent malformed redirection errors.
+    API endpoint to create a shortened URL. 
+    Enforces authentication to ensure link ownership.
     """
-    short_url = None
-    
-    if request.method == "POST":
-        # .strip() is crucial to remove accidental spaces that cause 404/malformed path errors
-        original_url = request.POST.get("original_url", "").strip()
-        
-        if request.user.is_authenticated:
-            # Generate a new unique code for the link
-            short_code = generate_short_code()
-            
-            # Save the mapping between the long URL and short code to the database
-            url_instance = ShortenedURL.objects.create(
-                original_url=original_url,
-                short_code=short_code,
-                user=request.user
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShortenedURLSerializer
+
+    @extend_schema(
+        request=ShortenedURLSerializer,
+        responses={201: ShortenedURLSerializer},
+        examples=[
+            OpenApiExample(
+                'Valid API Request',
+                value={"original_url": "https://www.google.com"},
+                request_only=True,
             )
-            
-            # Build the absolute URL. Note: Ensure your urls.py pattern matches this format.
-            # Usually, shorteners do not use a trailing slash for cleaner links.
-            short_url = request.build_absolute_uri(f'/{short_code}')
-        else:
-            return render(request, "shortener/index.html", {"error": "Please login first."})
-            
-    return render(request, "shortener/index.html", {"short_url": short_url})
-
-
-def redirect_url(request, short_code):
-    """
-    Redirect users to the original destination and log visitor metadata (IP and User Agent).
-    """
-    # Retrieve the record or return a 404 if the code doesn't exist
-    url_record = get_object_or_404(ShortenedURL, short_code=short_code)
-    
-    # Capture the real visitor IP when deployed on Render (via X-Forwarded-For header)
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    
-    if x_forwarded_for:
-        # Extract the first IP from the comma-separated list provided by the proxy
-        ip = x_forwarded_for.split(',')[0].strip()
-    else:
-        # Fallback to remote address for local development environments
-        ip = request.META.get('REMOTE_ADDR')
-        
-    # Create a click log entry for analytics
-    ClickDetail.objects.create(
-        url_record=url_record,
-        ip_address=ip,
-        user_agent=request.META.get('HTTP_USER_AGENT', '')
+        ]
     )
-    
-    # Perform the redirection to the original destination
-    return redirect(url_record.original_url)
+    def post(self, request):
+        serializer = ShortenedURLSerializer(data=request.data)
+        if serializer.is_valid():
+            short_code = generate_short_code()
+            # Explicitly associate the link with the logged-in user
+            serializer.save(user=request.user, short_code=short_code)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@login_required
-def url_stats(request):
+class ShortLinkListAPI(APIView):
     """
-    Display a list of URLs created by the current user along with their click history.
+    API endpoint to list all short links created by the current user.
     """
-    # Fetch user-owned URLs from newest to oldest
-    user_urls = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
-    
-    return render(request, 'shortener/stats.html', {'urls': user_urls})
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        links = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
+        serializer = ShortenedURLSerializer(links, many=True)
+        return Response(serializer.data)
+
+
+# --- Web Interface Views (For Browser Access) ---
+
+class CreateURLView(LoginRequiredMixin, View):
+    """
+    Web view for the homepage to create short links via a browser form.
+    """
+    def get(self, request):
+        return render(request, "shortener/index.html")
+
+    def post(self, request):
+        original_url = request.POST.get("original_url", "").strip()
+        short_code = generate_short_code()
+        
+        ShortenedURL.objects.create(
+            original_url=original_url,
+            short_code=short_code,
+            user=request.user
+        )
+        
+        short_url = request.build_absolute_uri(f'/{short_code}')
+        return render(request, "shortener/index.html", {"short_url": short_url})
+
+
+class URLRedirectView(LoginRequiredMixin, View):
+    """
+    Handles redirection and visitor tracking. 
+    Requires login to prevent unauthorized use of the link.
+    """
+    def get(self, request, short_code):
+        url_record = get_object_or_404(ShortenedURL, short_code=short_code)
+        
+        # Capture visitor IP through proxy for Render deployment
+        x_fwd = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip = x_fwd.split(',')[0].strip() if x_fwd else request.META.get('REMOTE_ADDR')
+            
+        # Log analytics metadata
+        ClickDetail.objects.create(
+            url_record=url_record,
+            ip_address=ip,
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+        return redirect(url_record.original_url)
+
+
+class URLStatsView(LoginRequiredMixin, View):
+    """
+    Displays the analytics dashboard for the logged-in user.
+    """
+    def get(self, request):
+        user_urls = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
+        return render(request, 'shortener/stats.html', {'urls': user_urls})
