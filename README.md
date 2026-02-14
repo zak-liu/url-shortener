@@ -1,4 +1,4 @@
-# Django URL Shortener (Interview Assignment)
+# Django URL Shortener
 
 A modern, functional URL shortening service built with Django 5.x. This project features secure third-party authentication, redirection logic, and visitor analytics.
 
