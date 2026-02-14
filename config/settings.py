@@ -145,8 +145,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # --- Django REST Framework & Documentation (Swagger) ---
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 } #
@@ -161,15 +161,7 @@ SPECTACULAR_SETTINGS = {
     # Restrict schema and Swagger UI access to admin users (is_staff=True)
     'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAdminUser'],
     
-    # Authorize button configuration in Swagger UI
-    'SECURITY': [
-        {
-            'basicAuth': [], 
-        }
-    ],
-    
     'COMPONENT_SPLIT_PATCH': True,
-    
     'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
         'displayOperationId': True,

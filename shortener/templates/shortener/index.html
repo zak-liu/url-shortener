@@ -10,7 +10,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
         .main-card { max-width: 500px; border-radius: 20px; border: none; }
         
-        /* Optimized user info section */
+        /* User info section */
         .user-section { 
             background: #ffffff; 
             border-bottom: 1px solid #f0f0f0; 
@@ -32,12 +32,13 @@
         }
         .bg-google { background-color: #343a40; color: white; }
         .bg-facebook { background-color: #1877F2; color: white; }
+        .bg-admin { background-color: #dc3545; color: white; }
 
-        /* Form and button styles */
         .form-control-lg { border-radius: 12px; font-size: 1rem; border: 2px solid #eee; }
         .form-control-lg:focus { border-color: #0d6efd; box-shadow: none; }
         .btn-lg { border-radius: 12px; font-weight: 600; padding: 12px; }
-        .btn-analytics { border-radius: 10px; font-size: 0.9rem; }
+        .btn-analytics { border-radius: 10px; font-size: 0.9rem; transition: all 0.2s; }
+        .btn-analytics:hover { background-color: #f8f9fa; }
         
         .alert-ready { border-radius: 12px; border: none; background: #e7f3ef; color: #198754; }
     </style>
@@ -54,13 +55,17 @@
                                 <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
                             </svg>
                         </div>
-                        <h5 class="mb-1 fw-bold">{{ user.get_full_name|default:user.username }}</h5>
+                        <h5 class="mb-1 fw-bold text-dark">{{ user.get_full_name|default:user.username }}</h5>
                         
-                        {% with provider=user.socialaccount_set.all.0.provider %}
-                        <span class="provider-badge {% if provider == 'google' %}bg-google{% else %}bg-facebook{% endif %}">
-                            Logged in via {{ provider }}
-                        </span>
-                        {% endwith %}
+                        {% if user.is_staff %}
+                            <span class="provider-badge bg-admin">Admin Access</span>
+                        {% else %}
+                            {% with provider=user.socialaccount_set.all.0.provider %}
+                            <span class="provider-badge {% if provider == 'google' %}bg-google{% else %}bg-facebook{% endif %}">
+                                Logged in via {{ provider }}
+                            </span>
+                            {% endwith %}
+                        {% endif %}
                     </div>
 
                     <h4 class="text-center mb-4 fw-bold">Shorten URL</h4>
@@ -83,14 +88,29 @@
                         </div>
                     {% endif %}
 
-                    <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
-                        <a href="{% url 'url_stats' %}" class="btn btn-link btn-analytics text-decoration-none text-info">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1 mb-1" viewBox="0 0 16 16">
-                                <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>
-                            </svg>
-                            View Analytics
-                        </a>
-                        <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary btn-sm px-3 border-0">Logout</a>
+                    <div class="mt-5 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex gap-3">
+                                <a href="{% url 'url_stats' %}" class="btn btn-link btn-analytics text-decoration-none text-info p-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1 mb-1" viewBox="0 0 16 16">
+                                        <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>
+                                    </svg>
+                                    Analytics
+                                </a>
+
+                                {% if user.is_staff %}
+                                <a href="{% url 'swagger-ui' %}" class="btn btn-link btn-analytics text-decoration-none text-success p-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1 mb-1" viewBox="0 0 16 16">
+                                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                    </svg>
+                                    API Docs
+                                </a>
+                                {% endif %}
+                            </div>
+                            
+                            <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary btn-sm px-3 border-0">Logout</a>
+                        </div>
                     </div>
 
                 {% else %}
@@ -98,11 +118,15 @@
                         <h3 class="fw-bold mb-3">Welcome</h3>
                         <p class="text-muted mb-5">Login to start shortening and tracking your links.</p>
                         <div class="d-grid gap-3">
-                            <a href="{% url 'google_login' %}" class="btn btn-outline-dark btn-lg d-flex align-items-center justify-content-center">
-                                Login with Google
+                            <a href="{% url 'google_login' %}" class="btn btn-outline-dark btn-lg d-flex align-items-center justify-content-center shadow-sm">
+                                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="20" class="me-2" alt="">
+                                Continue with Google
                             </a>
-                            <a href="{% url 'facebook_login' %}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center">
-                                Login with Facebook
+                            <a href="{% url 'facebook_login' %}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center shadow-sm" style="background-color: #1877F2; border: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" class="me-2" viewBox="0 0 16 16">
+                                    <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/>
+                                </svg>
+                                Continue with Facebook
                             </a>
                         </div>
                     </div>

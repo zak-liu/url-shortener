@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ShortenedURL # 假設你的 model 名稱
+from .models import ShortenedURL 
 
 class ShortenedURLSerializer(serializers.ModelSerializer):
     class Meta:

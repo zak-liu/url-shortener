@@ -60,7 +60,6 @@ class ShortLinkListAPI(APIView):
 
 
 # --- Web Interface Views (For Browser Access) ---
-
 class CreateURLView(LoginRequiredMixin, View):
     """
     Web view for the homepage to create short links via a browser form.
