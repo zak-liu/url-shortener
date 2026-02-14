@@ -154,23 +154,26 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     'TITLE': 'URL Shortener API',
     'DESCRIPTION': 'API documentation for URL shortening service with Secure OAuth2 & Basic Auth.',
-    'VERSION': '1.1.0', #
+    'VERSION': '1.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    
+    # --- New Security Setting ---
+    # Restrict schema and Swagger UI access to admin users (is_staff=True)
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAdminUser'],
     
     # Authorize button configuration in Swagger UI
     'SECURITY': [
         {
-            'basicAuth': [], # Enable Basic Auth testing in UI
+            'basicAuth': [], 
         }
     ],
     
     'COMPONENT_SPLIT_PATCH': True,
     
-    # Professional Swagger UI features
     'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
         'displayOperationId': True,
-        'persistAuthorization': True, # Keep testing session alive after refresh
+        'persistAuthorization': True,
     },
 }
 
