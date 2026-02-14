@@ -2,56 +2,114 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL Shortener Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        /* Smooth transition for the Open button */
-        .open-btn:hover { background-color: #198754 !important; color: white !important; }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        .main-card { max-width: 500px; border-radius: 20px; border: none; }
+        
+        /* 使用者資訊卡片優化 */
+        .user-section { 
+            background: #ffffff; 
+            border-bottom: 1px solid #f0f0f0; 
+            padding-bottom: 20px; 
+            margin-bottom: 30px; 
+        }
+        .profile-icon {
+            width: 48px; height: 48px;
+            background: #e9ecef;
+            color: #6c757d;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin: 0 auto 10px;
+        }
+        .provider-badge {
+            font-size: 11px; font-weight: 600;
+            padding: 4px 12px; border-radius: 50px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .bg-google { background-color: #343a40; color: white; }
+        .bg-facebook { background-color: #1877F2; color: white; }
+
+        /* 表單與按鈕優化 */
+        .form-control-lg { border-radius: 12px; font-size: 1rem; border: 2px solid #eee; }
+        .form-control-lg:focus { border-color: #0d6efd; box-shadow: none; }
+        .btn-lg { border-radius: 12px; font-weight: 600; padding: 12px; }
+        .btn-analytics { border-radius: 10px; font-size: 0.9rem; }
+        
+        .alert-ready { border-radius: 12px; border: none; background: #e7f3ef; color: #198754; }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="card shadow border-0 mx-auto" style="max-width: 500px;">
+<body>
+    <div class="container mt-5 pt-4">
+        <div class="card main-card shadow-lg mx-auto overflow-hidden">
             <div class="card-body p-5">
-                <h2 class="text-center mb-4">Shorten URL</h2>
                 
                 {% if user.is_authenticated %}
-                    <form method="POST" action="{% url 'create_url' %}">
-                        {% csrf_token %} <div class="mb-3">
-                            <input type="url" name="original_url" class="form-control form-control-lg" placeholder="Paste long URL here" required>
+                    <div class="user-section text-center">
+                        <div class="profile-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                            </svg>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">Create Short Link</button>
+                        <h5 class="mb-1 fw-bold">{{ user.get_full_name|default:user.username }}</h5>
+                        
+                        {% with provider=user.socialaccount_set.all.0.provider %}
+                        <span class="provider-badge {% if provider == 'google' %}bg-google{% else %}bg-facebook{% endif %}">
+                            Logged in via {{ provider }}
+                        </span>
+                        {% endwith %}
+                    </div>
+
+                    <h4 class="text-center mb-4 fw-bold">Shorten URL</h4>
+
+                    <form method="POST" action="{% url 'create_url' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <input type="url" name="original_url" class="form-control form-control-lg" placeholder="https://example.com/long-link" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">Create Short Link</button>
                     </form>
                     
                     {% if short_url %}
-                        <div class="alert alert-success mt-4">
-                            <p class="mb-2"><strong>Ready!</strong></p>
+                        <div class="alert alert-ready mt-4 animate__animated animate__fadeIn">
+                            <p class="mb-2 small fw-bold">Success! Your link is ready:</p>
                             <div class="input-group">
-                                <input type="text" class="form-control" value="{{ short_url }}" readonly>
-                                
-                                <a href="{{ short_url }}" target="_blank" class="btn btn-success open-btn">
-                                    Open
-                                </a>
+                                <input type="text" class="form-control border-0 bg-white" value="{{ short_url }}" readonly>
+                                <a href="{{ short_url }}" target="_blank" class="btn btn-success px-4">Open</a>
                             </div>
-                            <small class="text-muted mt-2 d-block">Click "Open" to test analytics tracking.</small>
                         </div>
                     {% endif %}
 
-                    <div class="text-center mt-4">
-                        <a href="{% url 'url_stats' %}" class="btn btn-outline-info btn-sm px-4">View Analytics</a>
-                        <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary btn-sm ms-2">Logout</a>
+                    <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                        <a href="{% url 'url_stats' %}" class="btn btn-link btn-analytics text-decoration-none text-info">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-1 mb-1" viewBox="0 0 16 16">
+                                <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>
+                            </svg>
+                            View Analytics
+                        </a>
+                        <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary btn-sm px-3 border-0">Logout</a>
                     </div>
+
                 {% else %}
-                    <div class="text-center">
-                        <p class="text-muted mb-4">Please login to start shortening links.</p>
-                        <div class="d-grid gap-2">
-                            <a href="{% url 'google_login' %}" class="btn btn-outline-dark">Login with Google</a>
-                            <a href="{% url 'facebook_login' %}" class="btn btn-primary">Login with Facebook</a>
+                    <div class="text-center py-4">
+                        <h3 class="fw-bold mb-3">Welcome</h3>
+                        <p class="text-muted mb-5">Login to start shortening and tracking your links.</p>
+                        <div class="d-grid gap-3">
+                            <a href="{% url 'google_login' %}" class="btn btn-outline-dark btn-lg d-flex align-items-center justify-content-center">
+                                Login with Google
+                            </a>
+                            <a href="{% url 'facebook_login' %}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center">
+                                Login with Facebook
+                            </a>
                         </div>
                     </div>
                 {% endif %}
             </div>
         </div>
+        <p class="text-center mt-4 text-muted small">© 2026 URL Shortener Service</p>
     </div>
 </body>
 </html>
