@@ -5,73 +5,69 @@ from .utils import generate_short_code
 
 def create_url(request):
     """
-    Handle URL creation and display the result on the same page.
+    Handle short URL creation. Includes a fix to strip whitespace from input URLs
+    to prevent malformed redirection errors.
     """
     short_url = None
     
     if request.method == "POST":
-        original_url = request.POST.get("original_url")
+        # .strip() is crucial to remove accidental spaces that cause 404/malformed path errors
+        original_url = request.POST.get("original_url", "").strip()
         
         if request.user.is_authenticated:
-            # Generate a unique short code
+            # Generate a new unique code for the link
             short_code = generate_short_code()
             
-            # Save to database
+            # Save the mapping between the long URL and short code to the database
             url_instance = ShortenedURL.objects.create(
                 original_url=original_url,
                 short_code=short_code,
                 user=request.user
             )
             
-            # Build the full absolute URL (e.g., http://127.0.0.1:8000/5JMCFc)
-            # This makes the link clickable for the user
+            # Build the absolute URL. Note: Ensure your urls.py pattern matches this format.
+            # Usually, shorteners do not use a trailing slash for cleaner links.
             short_url = request.build_absolute_uri(f'/{short_code}')
         else:
-            # Return an error message if the user is not logged in
             return render(request, "shortener/index.html", {"error": "Please login first."})
             
-    # Return the index page with the newly created short_url (if any)
     return render(request, "shortener/index.html", {"short_url": short_url})
 
 
 def redirect_url(request, short_code):
     """
-    View to redirect to the original URL and log the visitor's IP address.
+    Redirect users to the original destination and log visitor metadata (IP and User Agent).
     """
-    # 1. Fetch the URL record from the database
+    # Retrieve the record or return a 404 if the code doesn't exist
     url_record = get_object_or_404(ShortenedURL, short_code=short_code)
     
-    # 2. Capture the visitor's IP address
-    # This checks 'HTTP_X_FORWARDED_FOR' first, which is required for environments like Render.
+    # Capture the real visitor IP when deployed on Render (via X-Forwarded-For header)
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     
     if x_forwarded_for:
-        # The header may contain a list of IPs (e.g., "client_ip, proxy_ip").
-        # We take the first one and use .strip() to remove any whitespace.
+        # Extract the first IP from the comma-separated list provided by the proxy
         ip = x_forwarded_for.split(',')[0].strip()
     else:
-        # Fallback to REMOTE_ADDR for direct connections (e.g., localhost).
+        # Fallback to remote address for local development environments
         ip = request.META.get('REMOTE_ADDR')
         
-    # 3. Log the click information into the ClickDetail model
+    # Create a click log entry for analytics
     ClickDetail.objects.create(
         url_record=url_record,
         ip_address=ip,
         user_agent=request.META.get('HTTP_USER_AGENT', '')
     )
     
-    # 4. Redirect the user to the original long URL
+    # Perform the redirection to the original destination
     return redirect(url_record.original_url)
 
 
 @login_required
 def url_stats(request):
     """
-    Retrieve all shortened URLs created by the current authenticated user
-    along with their detailed click statistics.
+    Display a list of URLs created by the current user along with their click history.
     """
-    # Fetch URLs owned by the user, ordered by creation time (newest first)
+    # Fetch user-owned URLs from newest to oldest
     user_urls = ShortenedURL.objects.filter(user=request.user).order_by('-created_at')
     
-    # Render the stats page
     return render(request, 'shortener/stats.html', {'urls': user_urls})
