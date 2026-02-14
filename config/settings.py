@@ -31,10 +31,8 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 # In a strict production environment, you would list specific domains here.
 ALLOWED_HOSTS = ['*']
 
-# This tells Django to trust requests coming from your https URL.
+# Security settings for HTTPS environments
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
-
-# Without this, Django doesn't know it's on HTTPS and may cause redirect loops or empty responses.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
@@ -45,11 +43,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Infrastructure required for social login
+    # Site framework required by allauth
     'django.contrib.sites', 
     'shortener',
 
-    # Social authentication (django-allauth)
+    # Authentication backend (django-allauth)
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -57,14 +55,9 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
 ]
 
-STATIC_URL = 'static/'
-
-# Define where Django should collect static files for production
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be placed immediately after SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For static file handling in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -75,9 +68,6 @@ MIDDLEWARE = [
     # Add this line for django-allauth
     'allauth.account.middleware.AccountMiddleware',
 ]
-
-# Enable WhiteNoise's compression and caching storage engine
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ROOT_URLCONF = 'config.urls'
 
@@ -98,10 +88,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# Database configuration: Switch between PostgreSQL (Production) and SQLite (Development)
 DATABASES = {
     'default': dj_database_url.config(
         # Local development fallback: use SQLite
@@ -110,89 +97,41 @@ DATABASES = {
     )
 }
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+# --- django-allauth Core Configurations ---
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Set to 2 based on the Admin Site record ID for url-shortener-0s7j.onrender.com
+SITE_ID = 2 
 
-
-# Required for django-allauth to identify the current site
-SITE_ID = 2
-
-# config/settings.py
-# Redirect to home page after successful login
+# Post-login and post-logout redirection paths
 LOGIN_REDIRECT_URL = '/'
-
-# Redirect to home page after logout
 LOGOUT_REDIRECT_URL = '/'
 
-# Skip the "You are about to sign in using a third-party account from Google" page
-# It will redirect to Google login screen immediately upon clicking the login button
-SOCIALACCOUNT_LOGIN_ON_GET = True
+# One-tap login: Automatically create account and bypass intermediate signup page
+SOCIALACCOUNT_AUTO_SIGNUP = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Crucial for skipping the "Sign Up" confirm page
 
-# Skip the "Are you sure you want to sign out?" confirmation page
-# It will log the user out immediately when they click the logout link
+# Streamline the login process
+SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
 
-# Use email as the primary identifier
+# User identification settings
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 
-# Ensure we get the user's first and last name from social providers
-SOCIALACCOUNT_AUTO_SIGNUP = True
-
-# Provider specific settings
+# Social Provider settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        # Request access to the user's profile and email
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
     },
     'facebook': {
         'METHOD': 'oauth2',
-        # Request specific fields including first and last name
         'SCOPE': ['email', 'public_profile'],
         'FIELDS': [
             'id',
@@ -205,7 +144,14 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-## Import local settings if they exist (for development overrides)
+# Default language and time zone
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Import local settings for development if they exist
 try:
     from .local import *
 except ImportError:
